@@ -37,10 +37,19 @@ public class StudentService : IStudentService
     {
         return await _context.Students.FindAsync(id);
     }
-
-    public async Task UpdateAsync(Student student)
+    
+    public async Task UpdateAsync(Student updatedStudent)
     {
-        _context.Students.Update(student);
+        var student = await _context.Students
+            .FirstOrDefaultAsync(s => s.Id == updatedStudent.Id);
+
+        if (student == null)
+            throw new Exception("Student not found");
+
+        student.FullName = updatedStudent.FullName;
+        student.Email = updatedStudent.Email;
+        student.CourseId = updatedStudent.CourseId;
+
         await _context.SaveChangesAsync();
     }
 
