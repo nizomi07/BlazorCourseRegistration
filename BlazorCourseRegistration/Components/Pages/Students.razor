@@ -1,0 +1,158 @@
+@page "/students"
+@rendermode InteractiveServer
+
+@using BlazorCourseRegistration.Models.Entities
+@using BlazorCourseRegistration.Services
+@inject IStudentService StudentService
+@inject ICourseService CourseService
+
+<h3>Students</h3>
+
+<h5>@(isEditMode ? "Edit Student" : "Add New Student")</h5>
+
+<EditForm Model="currentStudent"
+          OnValidSubmit="HandleSubmit"
+          FormName="StudentCrudForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-2">
+        <label>Full Name</label>
+        <InputText class="form-control" @bind-Value="currentStudent.FullName" />
+    </div>
+
+    <div class="mb-2">
+        <label>Email</label>
+        <InputText class="form-control" @bind-Value="currentStudent.Email" />
+    </div>
+
+    <div class="mb-2">
+        <label>Course</label>
+        <InputSelect class="form-control" @bind-Value="currentStudent.CourseId">
+            <option value="0">-- Select Course --</option>
+            @foreach (var course in courses)
+            {
+                <option value="@course.Id">@course.Title</option>
+            }
+        </InputSelect>
+    </div>
+
+    <button type="submit" class="btn btn-success me-2">
+        @(isEditMode ? "Update" : "Create")
+    </button>
+
+    @if (isEditMode)
+    {
+        <button type="button" class="btn btn-secondary"
+                @onclick="CancelEdit">
+            Cancel
+        </button>
+    }
+</EditForm>
+
+<hr />
+
+
+@if (groupedStudents == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @foreach (var group in groupedStudents)
+    {
+        <h5>@group.Key</h5>
+
+        <ul class="list-group mb-4">
+            @foreach (var student in group.Value)
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>
+                        <strong>@student.FullName</strong>
+                        <br />
+                        <small>@student.Email</small>
+                    </span>
+
+                    <span>
+                        <button class="btn btn-sm btn-warning me-2"
+                                @onclick="() => EditStudent(student)">
+                            Edit
+                        </button>
+
+                        <button class="btn btn-sm btn-danger"
+                                @onclick="() => DeleteStudent(student.Id)">
+                            Delete
+                        </button>
+                    </span>
+                </li>
+            }
+        </ul>
+    }
+}
+
+
+@code {
+    private Dictionary<string, List<Student>>? groupedStudents;
+
+    private List<Models.Entities.Course> courses = new();
+
+    private Student currentStudent = new();
+    private bool isEditMode = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        courses = await CourseService.GetAllAsync();
+        await LoadStudents();
+    }
+
+    private async Task LoadStudents()
+    {
+        var students = await StudentService.GetAllAsync();
+
+        groupedStudents = students
+            .GroupBy(s => s.Course!.Title)
+            .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (isEditMode)
+        {
+            await StudentService.UpdateAsync(currentStudent);
+        }
+        else
+        {
+            await StudentService.RegisterAsync(currentStudent);
+        }
+
+        currentStudent = new Student();
+        isEditMode = false;
+
+        await LoadStudents();
+    }
+
+    private void EditStudent(Student student)
+    {
+        currentStudent = new Student
+        {
+            Id = student.Id,
+            FullName = student.FullName,
+            Email = student.Email,
+            CourseId = student.CourseId
+        };
+
+        isEditMode = true;
+    }
+
+    private async Task DeleteStudent(int id)
+    {
+        await StudentService.DeleteAsync(id);
+        await LoadStudents();
+    }
+
+    private void CancelEdit()
+    {
+        currentStudent = new Student();
+        isEditMode = false;
+    }
+}

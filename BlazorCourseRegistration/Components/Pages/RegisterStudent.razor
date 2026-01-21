@@ -1,0 +1,63 @@
+@page "/register/{CourseId:int}"
+@using BlazorCourseRegistration.Models.Entities
+@using BlazorCourseRegistration.Services
+@inject IStudentService StudentService
+@inject ICourseService CourseService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<h3>Register Student</h3>
+
+@if (course == null)
+{
+    <p>Loading...</p>
+    
+    // stop 5 seconds if doesn't show return
+    
+}
+else
+{
+    <p>
+        <strong>Course:</strong> @course.Title
+    </p>
+
+    <EditForm Model="student" OnValidSubmit="HandleSubmit" FormName="RegisterStudentForm">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Full Name</label>
+            <InputText class="form-control" @bind-Value="student.FullName" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <InputText class="form-control" @bind-Value="student.Email" />
+        </div>
+
+        <button type="submit" class="btn btn-success">
+            Register
+        </button>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int CourseId { get; set; }
+
+    private Student student = new ();
+    private Models.Entities.Course? course;
+
+    protected override async Task OnInitializedAsync()
+    {
+        course = await CourseService.GetByIdAsync(CourseId);
+        student.CourseId = CourseId;
+    }
+    
+    private async Task HandleSubmit()
+    {
+        student.RegisteredAt = DateTime.UtcNow;
+        await StudentService.RegisterAsync(student);
+        Navigation.NavigateTo($"/courses/{CourseId}");
+    }
+}

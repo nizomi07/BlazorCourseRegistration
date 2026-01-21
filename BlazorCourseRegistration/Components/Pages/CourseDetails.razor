@@ -1,0 +1,88 @@
+@page "/courses/{Id:int}"
+@using BlazorCourseRegistration.Models
+@using BlazorCourseRegistration.Models.Entities
+@using BlazorCourseRegistration.Services
+@inject ICourseService CourseService
+@inject IStudentService StudentService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+
+@if (course == null)
+{
+    <p>Loading course...</p>
+}
+else
+{
+    <h3>@course.Title</h3>
+
+    <p>@course.Description</p>
+
+    <p>
+        <strong>Level:</strong> @course.Level <br />
+        <strong>Duration:</strong> @course.DurationInHours hours
+    </p>
+
+    <hr />
+
+    <h4>Registered Students</h4>
+
+    @if (!students.Any())
+    {
+        <p>No students registered yet.</p>
+    }
+    else
+    {
+        <ul class="list-group">
+            @foreach (var student in students)
+            {
+                <li class="list-group-item">
+                    <strong>@student.FullName</strong>  
+                    <br />
+                    <small>@student.Email</small>
+                </li>
+            }
+        </ul>
+    }
+
+    <br />
+
+    <button class="btn btn-danger" style="margin-right: 5px"
+            @onclick="DeleteCourse">
+        Delete Course
+    </button>
+
+    <button class="btn btn-primary" @onclick="GoToRegistration">
+        Register Student
+    </button>
+}
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Models.Entities.Course? course;
+    private List<Student> students = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        course = await CourseService.GetByIdAsync(Id);
+
+        if (course != null)
+        {
+            students = await StudentService.GetByCourseAsync(course.Id);
+        }
+    }
+
+    private void GoToRegistration()
+    {
+        Navigation.NavigateTo($"/register/{Id}");
+    }
+    
+    private async Task DeleteCourse()
+    {
+        await CourseService.DeleteAsync(course!.Id);
+        Navigation.NavigateTo("/courses");
+    }
+}

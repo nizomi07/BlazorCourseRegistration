@@ -1,0 +1,89 @@
+@page "/courses"
+@using BlazorCourseRegistration.Services
+@inject ICourseService CourseService
+@rendermode InteractiveServer
+
+<h4>Add Course</h4>
+
+<EditForm Model="newCourse"
+          OnValidSubmit="AddCourse"
+          FormName="AddCourseForm">
+    <DataAnnotationsValidator />
+
+    <div class="mb-2">
+        <InputText class="form-control" placeholder="Title"
+                   @bind-Value="newCourse.Title" />
+    </div>
+
+    <div class="mb-2">
+        <InputText class="form-control" placeholder="Description"
+                   @bind-Value="newCourse.Description" />
+    </div>
+
+    <div class="mb-2">
+        <InputText class="form-control" placeholder="Level"
+                   @bind-Value="newCourse.Level" />
+    </div>
+
+    <div class="mb-2">
+        <InputNumber class="form-control" placeholder="Duration (hours)"
+                     @bind-Value="newCourse.DurationInHours" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+        Add Course
+    </button>
+</EditForm>
+
+<hr />
+
+
+<h3>Courses</h3>
+
+@if (courses == null)
+{
+    <p>Loading courses...</p>
+}
+else if (!courses.Any())
+{
+    <p>No courses available.</p>
+}
+else
+{
+    <ul class="list-group">
+        @foreach (var course in courses)
+        {
+            <li class="list-group-item">
+                <h5>@course.Title</h5>
+                <p>@course.Description</p>
+                <p>
+                    <strong>Level:</strong> @course.Level <br />
+                    <strong>Duration:</strong> @course.DurationInHours hours
+                </p>
+
+                <a href="/courses/@course.Id">View Details</a>
+            </li>
+        }
+    </ul>
+}
+
+
+@code {
+
+    private List<Models.Entities.Course> courses = new();
+    private Models.Entities.Course newCourse = new();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        courses = await CourseService.GetAllAsync();
+        
+    }
+    
+    private async Task AddCourse()
+    {
+        await CourseService.CreateAsync(newCourse);
+        newCourse = new Models.Entities.Course();
+        courses = await CourseService.GetAllAsync();
+    }
+
+}
